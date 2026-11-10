@@ -1,0 +1,248 @@
+openapi: 3.1.0
+
+info:
+  title: AROSQL API
+  version: 0.0.0
+  description: |
+    AROSQL manages experiments, runs, parameters, metrics, and plots
+    metadata for machine learning and other computational workloads.
+
+tags:
+  - name: System
+  - name: Organization
+  - name: Database
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      operationId: getHealth
+      summary: Check server health
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /orgs:
+    get:
+      tags:
+        - Organization
+      operationId: listOrganizations
+      summary: List organizations
+      responses:
+        "200":
+          description: Organization list
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+
+  /orgs/{organizationName}:
+    parameters:
+      - $ref: "#/components/parameters/OrganizationName"
+
+    get:
+      tags:
+        - Database
+      operationId: getDatabases
+      summary: Get databases for an organization
+      responses:
+        "200":
+          description: List of databases for the organization
+          content:
+            text/plain:
+              schema:
+                type: string
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+
+    post:
+      tags:
+        - Organization
+      operationId: createOrganization
+      summary: Create an organization
+      responses:
+        "204":
+          description: Organization created
+        "409":
+          description: Organization name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    
+    delete:
+      tags:
+        - Organization
+      operationId: deleteOrganization
+      summary: Delete an organization
+      description: |
+        Deletes the organization and its associated experiments and runs.
+      responses:
+        "204":
+          description: Organization deleted
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+
+  /orgs/{organizationName}/db/{databaseName}:
+    parameters:
+      - $ref: "#/components/parameters/OrganizationName"
+      - $ref: "#/components/parameters/DatabaseName"
+
+    post:
+      tags:
+        - Database
+      operationId: createDatabaseAndTables
+      summary: Create a database and its tables
+      description: Create a database and its tables
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "204":
+          description: Database and its tables created
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+
+    put:
+      tags:
+        - Database
+      operationId: alterDatabaseAndTables
+      summary: Alter a database and its tables
+      description: Alter a database and its tables
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "204":
+          description: Database and its tables altered
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+
+    delete:
+      tags:
+        - Database
+      operationId: deleteDatabase
+      summary: Delete a database
+      description: |
+        Deletes the database and its associated parameters and metrics.
+      responses:
+        "204":
+          description: Database deleted
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    
+    patch:
+      tags:
+        - Database
+      operationId: DML
+      summary: Handle tables with DML operations
+      description: Handle tables with DML operations
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Tables handled with DML
+          content:
+            text/plain:
+              schema:
+                type: string
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+
+
+components:
+  parameters:
+    OrganizationName:
+      name: organizationName
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 32
+
+    DatabaseName:
+      name: databaseName
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 32
+
+  responses:
+    ErrorResponse:
+      description: Request failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        version:
+          type: string
+          example: 0.1.0
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: RESOURCE_NOT_FOUND
+        message:
+          type: string
+          example: The requested run was not found.
+        details:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
